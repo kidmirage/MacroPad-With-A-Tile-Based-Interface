@@ -144,7 +144,7 @@ String macros[] = {
   "KEY_DOWN_ARROW",                    // down
   "",                                  // Skip for now.
   "",                                  // Skip for now.
-  "MEDIA_VOLUME_UP",                   // louder **** YouTube Only.
+  "MEDIA_VOLUME_UP",                   // louder 
   "MEDIA_VOLUME_DOWN",                 // softer
   "MEDIA_MUTE",                        // mute
   "MEDIA_PLAY_PAUSE",                  // pause/play
