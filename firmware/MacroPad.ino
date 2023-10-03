@@ -1,8 +1,8 @@
-#include <Keyboard.h>
+#include <HID-Project.h>
 #include <debounce.h>
 
 // Analog input for the hall effect sensor selected by the multiplexer chip.
-static constexpr int sensorPin = A1;   // Read the analog value of the sensor selected by the multiplexer chip.
+static constexpr int sensorPin = A1;  // Read the analog value of the sensor selected by the multiplexer chip.
 
 // Output pins used to select one of the sixteen hall effect sensors via the multiplexer chip.
 static constexpr int S0 = 15;
@@ -21,26 +21,27 @@ static constexpr int BT7 = 8;
 static constexpr int BT8 = 9;
 
 // Sensor initial values.
-static int midValues[] = {526,524,527,524,528,526,525,527,526,526,528,527,524,526,527,525};
+static int midValues[] = { 526, 524, 527, 524, 528, 526, 525, 527, 526, 526, 528, 527, 524, 526, 527, 525 };
 
 // Individual sensor calibration values.
 static int calValues[16][8] = {
-  {136,72,54,37,-123,-87,-56,-37},
-  {136,75,57,38,-128,-91,-58,-39},
-  {135,74,55,37,-125,-90,-57,-38},
-  {135,69,53,35,-119,-85,-53,-36},
-  {137,75,56,38,-127,-86,-57,-38},
-  {134,71,54,36,-120,-83,-54,-36},
-  {130,75,57,37,-128,-83,-58,-40},
-  {136,72,55,37,-124,-83,-55,-37},
-  {139,74,56,38,-127,-85,-58,-39},  
-  {135,73,55,37,-125,-85,-56,-38},
-  {139,74,56,38,-127,-89,-58,-39},
-  {135,73,55,37,-125,-86,-56,-38},
-  {137,73,55,37,-123,-85,-56,-36},
-  {133,72,55,37,-124,-85,-56,-37},
-  {135,74,56,37,-127,-89,-61,-38},
-  {136,73,55,37,-124,-85,-60,-38}};
+  { 136, 72, 54, 37, -123, -87, -56, -37 },
+  { 136, 75, 57, 38, -128, -91, -58, -39 },
+  { 135, 74, 55, 37, -125, -90, -57, -38 },
+  { 135, 69, 53, 35, -119, -85, -53, -36 },
+  { 137, 75, 56, 38, -127, -86, -57, -38 },
+  { 134, 71, 54, 36, -120, -83, -54, -36 },
+  { 130, 75, 57, 37, -128, -83, -58, -40 },
+  { 136, 72, 55, 37, -124, -83, -55, -37 },
+  { 139, 74, 56, 38, -127, -85, -58, -39 },
+  { 135, 73, 55, 37, -125, -85, -56, -38 },
+  { 139, 74, 56, 38, -127, -89, -58, -39 },
+  { 135, 73, 55, 37, -125, -86, -56, -38 },
+  { 137, 73, 55, 37, -123, -85, -56, -36 },
+  { 133, 72, 55, 37, -124, -85, -56, -37 },
+  { 135, 74, 56, 37, -127, -89, -61, -38 },
+  { 136, 73, 55, 37, -124, -85, -60, -38 }
+};
 
 // Fetch the sensor value here.
 int sensorValue = 0;
@@ -48,106 +49,53 @@ int sensorValue = 0;
 // Define the delimiter character for the macro definitions.
 static constexpr char *delimiter = ",";
 
-// These definitions were copied from Keyboard.h to allow expression of macros as Strings.
-String specialKeys[][2] = {
-// Modifier keys.
- {"KEY_LEFT_CTRL","0x80"},
- //{"KEY_LEFT_SHIFT","0x81"},
- //{"KEY_LEFT_ALT","0x82"},
- //{"KEY_LEFT_GUI","0x83"},
- //{"KEY_RIGHT_CTRL","0x84"},
- //{"KEY_RIGHT_SHIFT","0x85"},
- //{"KEY_RIGHT_ALT","0x86"},
- //{"KEY_RIGHT_GUI","0x87"},
- 
- // Miscellaneous keys.
- {"KEY_UP_ARROW","0xDA"},
- {"KEY_DOWN_ARROW","0xD9"},
- {"KEY_LEFT_ARROW","0xD8"},
- {"KEY_RIGHT_ARROW","0xD7"},
- //{"KEY_BACKSPACE","0xB2"},
- //{"KEY_TAB","0xB3"},
- //{"KEY_RETURN","0xB0"},
- //{"KEY_MENU","0xED"},
- //{"KEY_ESC","0xB1"},
- //{"KEY_INSERT","0xD1"},
- //{"KEY_DELETE","0xD4"},
- //{"KEY_PAGE_UP","0xD3"},
- //{"KEY_PAGE_DOWN","0xD6"},
- //{"KEY_HOME","0xD2"},
- //{"KEY_END","0xD5"},
- //{"KEY_CAPS_LOCK","0xC1"},
- //{"KEY_PRINT_SCREEN","0xCE"},
- //{"KEY_SCROLL_LOCK","0xCF"},
- //{"KEY_PAUSE","0xD0"},
- 
- // Numeric keypad.
- //{"KEY_NUM_LOCK","0xDB"},
- //{"KEY_KP_SLASH","0xDC"},
- //{"KEY_KP_ASTERISK","0xDD"},
- //{"KEY_KP_MINUS","0xDE"},
- //{"KEY_KP_PLUS","0xDF"},
- //{"KEY_KP_ENTER","0xE0"},
- //{"KEY_KP_1","0xE1"},
- //{"KEY_KP_2","0xE2"},
- //{"KEY_KP_3","0xE3"},
- //{"KEY_KP_4","0xE4"},
- //{"KEY_KP_5","0xE5"},
- //{"KEY_KP_6","0xE6"},
- //{"KEY_KP_7","0xE7"},
- //{"KEY_KP_8","0xE8"},
- //{"KEY_KP_9","0xE9"},
- //{"KEY_KP_0","0xEA"},
- //{"KEY_KP_DOT","0xEB"},
- 
- // Function keys.
- //{"KEY_F1","0xC2"},
- //{"KEY_F2","0xC3"},
- //{"KEY_F3","0xC4"},
- //{"KEY_F4","0xC5"},
- //{"KEY_F5","0xC6"},
- //{"KEY_F6","0xC7"},
- //{"KEY_F7","0xC8"},
- //{"KEY_F8","0xC9"},
- //{"KEY_F9","0xCA"},
- //{"KEY_F10","0xCB"},
- //{"KEY_F11","0xCC"},
- //{"KEY_F12","0xCD"},
- //{"KEY_F13","0xF0"},
- //{"KEY_F14","0xF1"},
- //{"KEY_F15","0xF2"},
- //{"KEY_F16","0xF3"},
- //{"KEY_F17","0xF4"},
- //{"KEY_F18","0xF5"},
- //{"KEY_F19","0xF6"},
- //{"KEY_F20","0xF7"},
- //{"KEY_F21","0xF8"},
- //{"KEY_F22","0xF9"},
- //{"KEY_F23","0xFA"},
- //{"KEY_F24","0xFB"},
- {"MEDIA_PAUSE_PLAY","0x78"},
- {"MEDIA_MUTE","0x7F"},
- {"MEDIA_VOLUME_UP","0x80"},
- {"MEDIA_VOLUME_DOWN","0x81"},
+// Add any
+String keyboardKeyNames[] = {
+  "KEY_LEFT_CTRL",
+  "KEY_UP_ARROW",
+  "KEY_DOWN_ARROW",
+  "KEY_LEFT_ARROW",
+  "KEY_RIGHT_ARROW"
+};
 
-  {""},{""}};          // Terminator
+KeyboardKeycode keyboardKeyCodes[]{
+  KEY_LEFT_CTRL,
+  KEY_UP_ARROW,
+  KEY_DOWN_ARROW,
+  KEY_LEFT_ARROW,
+  KEY_RIGHT_ARROW
+};
 
- // Define the macros here.
+String consumerKeyNames[] = {
+  "MEDIA_PLAY_PAUSE",
+  "MEDIA_VOL_MUTE",
+  "MEDIA_VOLUME_UP",
+  "MEDIA_VOLUME_DOWN"
+};
+
+ConsumerKeycode consumerKeyCodes[]{
+  MEDIA_PLAY_PAUSE,
+  MEDIA_VOL_MUTE,
+  MEDIA_VOLUME_UP,
+  MEDIA_VOLUME_DOWN
+};
+
+// Define the macros here.
 String macros[] = {
-  "PRESS,KEY_LEFT_CTRL,a,RELEASE_ALL", // select
-  "PRESS,KEY_LEFT_CTRL,c,RELEASE_ALL", // copy
-  "PRESS,KEY_LEFT_CTRL,x,RELEASE_ALL", // cut
-  "PRESS,KEY_LEFT_CTRL,v,RELEASE_ALL", // paste
-  "KEY_UP_ARROW",                      // up
-  "KEY_LEFT_ARROW",                    // left
-  "KEY_RIGHT_ARROW",                   // right
-  "KEY_DOWN_ARROW",                    // down
-  "",                                  // Skip for now.
-  "",                                  // Skip for now.
-  "MEDIA_VOLUME_UP",                   // louder 
-  "MEDIA_VOLUME_DOWN",                 // softer
-  "MEDIA_MUTE",                        // mute
-  "MEDIA_PLAY_PAUSE",                  // pause/play
+  "PRESS,KEY_LEFT_CTRL,a,RELEASE_ALL",  // select
+  "PRESS,KEY_LEFT_CTRL,c,RELEASE_ALL",  // copy
+  "PRESS,KEY_LEFT_CTRL,x,RELEASE_ALL",  // cut
+  "PRESS,KEY_LEFT_CTRL,v,RELEASE_ALL",  // paste
+  "KEY_UP_ARROW",                       // up
+  "KEY_LEFT_ARROW",                     // left
+  "KEY_RIGHT_ARROW",                    // right
+  "KEY_DOWN_ARROW",                     // down
+  "",                                   // Skip for now.
+  "",                                   // Skip for now.
+  "MEDIA_VOLUME_DOWN",                  // louder 
+  "MEDIA_VOLUME_UP",                    // softer
+  "MEDIA_VOL_MUTE",                     // mute
+  "MEDIA_PLAY_PAUSE",                   // pause/play
   ""
 };
 
@@ -178,7 +126,7 @@ static void sendMacro(int macroNumber) {
   // Parse the string for tokens.
   char *ptr = NULL;
   ptr = strtok(buffer, delimiter);  // First token.
-  while(ptr != NULL) {
+  while (ptr != NULL) {
     String token = String(ptr);
     int toklen = token.length();
     if (token == "PRESS") {
@@ -193,31 +141,25 @@ static void sendMacro(int macroNumber) {
       pressMode = false;
     } else if (token.startsWith("KEY")) {
       // Send one of the special standard key codes found in Keyboard.h.
-      for (int i = 0; i < sizeof(specialKeys); i++) {
-        if (token == specialKeys[i][0]) {
-          String key = specialKeys[i][1];
-          char keyArray[5];
-          key.toCharArray(keyArray, length);
-          int keychar = strtol(keyArray, NULL, 16);
+      for (int i = 0; i < sizeof(keyboardKeyNames); i++) {
+        if (token == keyboardKeyNames[i]) {
+          KeyboardKeycode code = keyboardKeyCodes[i];
           if (pressMode) {
-            Keyboard.press(keychar);
+            Keyboard.press(code);
           } else {
-            Keyboard.write(keychar);
+            Keyboard.write(code);
           }
         }
       }
     } else if (token.startsWith("MEDIA")) {
       // Send one of the special media key codes found in Keyboard.h.
-      for (int i = 0; i < sizeof(specialKeys); i++) {
-        if (token == specialKeys[i][0]) {
-          String key = specialKeys[i][1];
-          char keyArray[5];
-          key.toCharArray(keyArray, length);
-          int keychar = strtol(keyArray, NULL, 16);
+      for (int i = 0; i < sizeof(consumerKeyNames); i++) {
+        if (token == consumerKeyNames[i]) {
+          ConsumerKeycode code = consumerKeyCodes[i];
           if (pressMode) {
-            Keyboard.pressRaw(keychar);
+            Consumer.press(code);
           } else {
-            Keyboard.writeRaw(keychar);
+            Consumer.write(code);
           }
         }
       }
@@ -249,9 +191,9 @@ static void sendMacro(int macroNumber) {
         }
       }
     }
-    // Next token. 
+    // Next token.
     ptr = strtok(NULL, delimiter);  // Next token.
-  } 
+  }
 }
 
 // Button presses that have been debounced will be handled here.
@@ -296,11 +238,11 @@ static void buttonHandler(uint8_t btnId, uint8_t btnState) {
     }
     // Determine what macro to send.
     setSensorForInput(leftSensor);
-    sensorValue = analogRead(sensorPin)-midValues[leftSensor];
-    int macro = findCode(leftSensor,sensorValue)*10;
+    sensorValue = analogRead(sensorPin) - midValues[leftSensor];
+    int macro = findCode(leftSensor, sensorValue) * 10;
     setSensorForInput(rightSensor);
-    sensorValue = analogRead(sensorPin)-midValues[rightSensor];
-    macro = macro + findCode(rightSensor,sensorValue);
+    sensorValue = analogRead(sensorPin) - midValues[rightSensor];
+    macro = macro + findCode(rightSensor, sensorValue);
 
     // Send the macro.
     sendMacro(macro);
@@ -318,28 +260,28 @@ static Button Button7(BT7, buttonHandler);
 static Button Button8(BT8, buttonHandler);
 
 void setup() {
-   // Setup serial output.
+  // Setup serial output.
   Serial.begin(115200);
-  while(!Serial) {
+  while (!Serial) {
     // Wait for Serial to initialize.
     delay(10);
   }
   Serial.println("Tile Based MacroPad!");
 
   // Initialize pins.
-  pinMode(S0, OUTPUT); 
+  pinMode(S0, OUTPUT);
   pinMode(S1, OUTPUT);
-  pinMode(S2, OUTPUT); 
-  pinMode(S3, OUTPUT);  
+  pinMode(S2, OUTPUT);
+  pinMode(S3, OUTPUT);
 
-  pinMode(BT1, INPUT_PULLUP); 
-  pinMode(BT2, INPUT_PULLUP); 
-  pinMode(BT3, INPUT_PULLUP); 
-  pinMode(BT4, INPUT_PULLUP); 
-  pinMode(BT5, INPUT_PULLUP); 
-  pinMode(BT6, INPUT_PULLUP); 
-  pinMode(BT7, INPUT_PULLUP); 
-  pinMode(BT8, INPUT_PULLUP); 
+  pinMode(BT1, INPUT_PULLUP);
+  pinMode(BT2, INPUT_PULLUP);
+  pinMode(BT3, INPUT_PULLUP);
+  pinMode(BT4, INPUT_PULLUP);
+  pinMode(BT5, INPUT_PULLUP);
+  pinMode(BT6, INPUT_PULLUP);
+  pinMode(BT7, INPUT_PULLUP);
+  pinMode(BT8, INPUT_PULLUP);
 
   /****
   // List the initial sensor values.
@@ -352,7 +294,7 @@ void setup() {
   ****/
 
   // Initialize the keyboard.
-  Keyboard.begin();     // For media keys.
+  Consumer.begin();  // For media keys.
 }
 
 // Check for button changes on each loop.
@@ -370,7 +312,7 @@ static void pollButtons() {
 }
 
 void loop() {
-  pollButtons(); // Poll your buttons every loop.
+  pollButtons();  // Poll your buttons every loop.
   delay(10);
 }
 
