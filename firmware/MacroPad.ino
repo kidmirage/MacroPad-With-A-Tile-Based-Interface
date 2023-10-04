@@ -230,7 +230,7 @@ static void enableRepeat(int macro) {
 static void checkRepeat() {
   unsigned long newTime = millis();
   if (repeatEnabled) {
-    if (firstRepeat && (millis() - repeatTime) > 1000) {
+    if (firstRepeat && (millis() - repeatTime) > 2000) {
       sendMacro(repeatMacro);
       firstRepeat = false;
       repeatTime = newTime;
