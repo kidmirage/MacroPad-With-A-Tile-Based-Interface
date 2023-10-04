@@ -94,7 +94,6 @@ KEY_8                      KEY_PAGE_UP
 KEY_9                      KEY_DELETE                                         
 KEY_0                      KEY_END 
 
-
 You can add any of these codes to the keyboard lists below for use in macro definitions.
 In the keyboardKeyNames table add the code as a string delimited by "".
 In the keyboardKeyCodes table add the code as is without quotes.
@@ -213,6 +212,40 @@ static int findCode(int sensor, int value) {
   return -1;
 }
 
+// Variables used to manage key auto repeat.
+bool repeatEnabled = false;
+bool firstRepeat = false;
+unsigned long repeatTime = 0L;
+int repeatMacro = 0;
+
+// Enable repeat for the current macro.
+static void enableRepeat(int macro) {
+  repeatEnabled = true;
+  firstRepeat = true;
+  repeatMacro = macro;
+  repeatTime = millis();
+}
+
+// See if the latest macro should be sent again.
+static void checkRepeat() {
+  unsigned long newTime = millis();
+  if (repeatEnabled) {
+    if (firstRepeat && (millis() - repeatTime) > 1000) {
+      sendMacro(repeatMacro);
+      firstRepeat = false;
+      repeatTime = newTime;
+    } else if ((millis() - repeatTime) > 100) {
+      sendMacro(repeatMacro);
+      repeatTime = newTime;
+    }
+  }
+}
+
+// Stop the key repeat.
+static void stopRepeat() {
+  repeatEnabled = false;
+}
+
 // Fetch the macro string based on the index passed, parse the macro string sending the key codes.
 static void sendMacro(int macroNumber) {
   // Keep track of whether we are in PRESS or WRITE mode.
@@ -300,6 +333,30 @@ static void sendMacro(int macroNumber) {
   }
 }
 
+// Given a sensor number, set the S0-S3 pins to select it for input.
+void setSensorForInput(int sensorNumber) {
+  if (sensorNumber & 1) {
+    digitalWrite(S0, HIGH);
+  } else {
+    digitalWrite(S0, LOW);
+  }
+  if (sensorNumber & 2) {
+    digitalWrite(S1, HIGH);
+  } else {
+    digitalWrite(S1, LOW);
+  }
+  if (sensorNumber & 4) {
+    digitalWrite(S2, HIGH);
+  } else {
+    digitalWrite(S2, LOW);
+  }
+  if (sensorNumber & 8) {
+    digitalWrite(S3, HIGH);
+  } else {
+    digitalWrite(S3, LOW);
+  }
+}
+
 // Button presses that have been debounced will be handled here.
 static void buttonHandler(uint8_t btnId, uint8_t btnState) {
   int leftSensor, rightSensor;
@@ -340,6 +397,7 @@ static void buttonHandler(uint8_t btnId, uint8_t btnState) {
       default:
         break;
     }
+    
     // Determine what macro to send.
     setSensorForInput(leftSensor);
     sensorValue = analogRead(sensorPin) - midValues[leftSensor];
@@ -350,6 +408,9 @@ static void buttonHandler(uint8_t btnId, uint8_t btnState) {
 
     // Send the macro.
     sendMacro(macro);
+    enableRepeat(macro);
+  } else {
+    stopRepeat();
   }
 }
 
@@ -363,13 +424,24 @@ static Button Button6(BT6, buttonHandler);
 static Button Button7(BT7, buttonHandler);
 static Button Button8(BT8, buttonHandler);
 
+// Check for button changes on each loop.
+static void pollButtons() {
+  // update() will call buttonHandler() if the pin transitions to a new state and stays there
+  // for multiple reads over 25+ ms.
+  Button1.update(digitalRead(BT1));
+  Button2.update(digitalRead(BT2));
+  Button3.update(digitalRead(BT3));
+  Button4.update(digitalRead(BT4));
+  Button5.update(digitalRead(BT5));
+  Button6.update(digitalRead(BT6));
+  Button7.update(digitalRead(BT7));
+  Button8.update(digitalRead(BT8));
+}
+
 void setup() {
   // Setup serial output.
   Serial.begin(115200);
-  while (!Serial) {
-    // Wait for Serial to initialize.
-    delay(10);
-  }
+  delay(1000);
   Serial.println("Tile Based MacroPad!");
 
   // Initialize pins.
@@ -388,7 +460,7 @@ void setup() {
   pinMode(BT8, INPUT_PULLUP);
 
   /****
-  // List the initial sensor values.
+  // List the initial sensor values. Only run with no tiles in.
   for (int i = 0; i < 16; i++) {
     sensorValue = analogRead(sensorPin);
     Serial.print(sensorValue);
@@ -398,48 +470,11 @@ void setup() {
   ****/
 
   // Initialize the keyboard.
-  Consumer.begin();  // For media keys.
-}
-
-// Check for button changes on each loop.
-static void pollButtons() {
-  // update() will call buttonHandler() if the pin transitions to a new state and stays there
-  // for multiple reads over 25+ ms.
-  Button1.update(digitalRead(BT1));
-  Button2.update(digitalRead(BT2));
-  Button3.update(digitalRead(BT3));
-  Button4.update(digitalRead(BT4));
-  Button5.update(digitalRead(BT5));
-  Button6.update(digitalRead(BT6));
-  Button7.update(digitalRead(BT7));
-  Button8.update(digitalRead(BT8));
+  Consumer.begin();
 }
 
 void loop() {
-  pollButtons();  // Poll your buttons every loop.
+  pollButtons();  // Poll for buttons presses every loop.
+  checkRepeat();  // See if the last macro needs repeating.
   delay(10);
-}
-
-// Given a sensor number, set the S0-S3 pins to select it for input.
-void setSensorForInput(int sensorNumber) {
-  if (sensorNumber & 1) {
-    digitalWrite(S0, HIGH);
-  } else {
-    digitalWrite(S0, LOW);
-  }
-  if (sensorNumber & 2) {
-    digitalWrite(S1, HIGH);
-  } else {
-    digitalWrite(S1, LOW);
-  }
-  if (sensorNumber & 4) {
-    digitalWrite(S2, HIGH);
-  } else {
-    digitalWrite(S2, LOW);
-  }
-  if (sensorNumber & 8) {
-    digitalWrite(S3, HIGH);
-  } else {
-    digitalWrite(S3, LOW);
-  }
 }
