@@ -24,23 +24,23 @@ static constexpr int BT8 = 9;
 static int midValues[] = { 526, 524, 527, 524, 528, 526, 525, 527, 526, 526, 528, 527, 524, 526, 527, 525 };
 
 // Individual sensor calibration values.
-static int calValues[16][8] = {
-  { 136, 72, 54, 37, -123, -87, -56, -37 },
-  { 136, 75, 57, 38, -128, -91, -58, -39 },
-  { 135, 74, 55, 37, -125, -90, -57, -38 },
-  { 135, 69, 53, 35, -119, -85, -53, -36 },
-  { 137, 75, 56, 38, -127, -86, -57, -38 },
-  { 134, 71, 54, 36, -120, -83, -54, -36 },
-  { 130, 75, 57, 37, -128, -83, -58, -40 },
-  { 136, 72, 55, 37, -124, -83, -55, -37 },
-  { 139, 74, 56, 38, -127, -85, -58, -39 },
-  { 135, 73, 55, 37, -125, -85, -56, -38 },
-  { 139, 74, 56, 38, -127, -89, -58, -39 },
-  { 135, 73, 55, 37, -125, -86, -56, -38 },
-  { 137, 73, 55, 37, -123, -85, -56, -36 },
-  { 133, 72, 55, 37, -124, -85, -56, -37 },
-  { 135, 74, 56, 37, -127, -89, -61, -38 },
-  { 136, 73, 55, 37, -124, -85, -60, -38 }
+static int calValues[16][10] = {
+  { 136, 99, 72, 54, 37, -123, -102, -87, -56, -37 },
+  { 136, 96, 75, 57, 38, -128, -105, -91, -58, -39 },
+  { 135, 102, 74, 55, 37, -125, -103, -90, -57, -38 },
+  { 135, 95, 75, 53, 35, -119, -97, -85, -53, -36 },
+  { 137, 94, 75, 56, 38, -127, -102, -86, -57, -38 },
+  { 134, 97, 71, 54, 36, -120, -99, -83, -54, -36 },
+  { 130, 96, 75, 57, 37, -128, -105, -83, -58, -40 },
+  { 136, 98, 72, 55, 37, -124, -101, -83, -55, -37 },
+  { 139, 104, 74, 56, 38, -127, -107, -85, -58, -39 },
+  { 135, 92, 73, 55, 37, -125, -100, -85, -56, -38 },
+  { 139, 103, 74, 56, 38, -127, -105, -89, -58, -39 },
+  { 135, 94, 73, 55, 37, -125, -102, -86, -56, -38 },
+  { 137, 94, 73, 55, 37, -123, -101, -85, -56, -36 },
+  { 133, 98, 72, 55, 37, -124, -99, -85, -56, -37 },
+  { 135, 100, 74, 56, 37, -127, -101, -89, -61, -38 },
+  { 136, 93, 73, 55, 37, -124, -100, -85, -60, -38 }
 };
 
 // Fetch the sensor value here.
@@ -48,7 +48,6 @@ int sensorValue = 0;
 
 // Define the delimiter character for the macro definitions.
 static constexpr char *delimiter = ",";
-
 
 /*****
 * Standard Key Codes.
@@ -192,11 +191,9 @@ String macros[] = {
   "KEY_LEFT_ARROW",                     // left
   "KEY_RIGHT_ARROW",                    // right
   "KEY_DOWN_ARROW",                     // down
-  "",                                   // Skip for now.
-  "",                                   // Skip for now.
+  "MEDIA_VOLUME_DOWN",                  // softer 
+  "MEDIA_VOLUME_UP",                    // louder
   // 10 to 19
-  "MEDIA_VOLUME_DOWN",                  // louder 
-  "MEDIA_VOLUME_UP",                    // softer
   "MEDIA_VOL_MUTE",                     // mute
   "MEDIA_PLAY_PAUSE",                   // pause/play
   ""
@@ -204,12 +201,16 @@ String macros[] = {
 
 // Given a sensor and a value find the numeric code.
 static int findCode(int sensor, int value) {
-  for (int i = 0; i < 8; i++) {
-    if (abs(value - calValues[sensor][i]) < 13) {
-      return i;
+  int closestVal = 1000; // Set higher than any expected value.
+  int closestPos = -1;
+  for (int i = 0; i < 10; i++) {
+    int diff = abs(value - calValues[sensor][i]);
+    if (diff < closestVal) {
+      closestPos = i;
+      closestVal = diff;
     }
   }
-  return -1;
+  return closestPos;
 }
 
 // Variables used to manage key auto repeat.
@@ -230,13 +231,17 @@ static void enableRepeat(int macro) {
 static void checkRepeat() {
   unsigned long newTime = millis();
   if (repeatEnabled) {
-    if (firstRepeat && (millis() - repeatTime) > 2000) {
-      sendMacro(repeatMacro);
-      firstRepeat = false;
-      repeatTime = newTime;
-    } else if ((millis() - repeatTime) > 100) {
-      sendMacro(repeatMacro);
-      repeatTime = newTime;
+    if (firstRepeat) {
+      if ((newTime - repeatTime) > 1000) {
+        firstRepeat = false;
+        sendMacro(repeatMacro);
+        repeatTime = newTime;
+      }
+    } else {
+      if ((newTime - repeatTime) > 100) {
+        sendMacro(repeatMacro);
+        repeatTime = newTime;
+      }
     }
   }
 }
@@ -401,10 +406,15 @@ static void buttonHandler(uint8_t btnId, uint8_t btnState) {
     // Determine what macro to send.
     setSensorForInput(leftSensor);
     sensorValue = analogRead(sensorPin) - midValues[leftSensor];
+    Serial.print(sensorValue);
+    Serial.print(" ");
     int macro = findCode(leftSensor, sensorValue) * 10;
     setSensorForInput(rightSensor);
     sensorValue = analogRead(sensorPin) - midValues[rightSensor];
+    Serial.print(sensorValue);
+    Serial.print(" ");
     macro = macro + findCode(rightSensor, sensorValue);
+    Serial.println(macro);
 
     // Send the macro.
     sendMacro(macro);
@@ -468,7 +478,7 @@ void setup() {
   }
   Serial.println();
   ****/
-
+  
   // Initialize the keyboard.
   Consumer.begin();
 }
