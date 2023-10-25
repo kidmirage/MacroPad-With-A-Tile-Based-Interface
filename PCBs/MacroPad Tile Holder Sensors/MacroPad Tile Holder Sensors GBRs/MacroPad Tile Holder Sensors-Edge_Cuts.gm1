@@ -1,0 +1,23 @@
+G04 #@! TF.GenerationSoftware,KiCad,Pcbnew,7.0.2*
+G04 #@! TF.CreationDate,2023-10-24T21:53:47-04:00*
+G04 #@! TF.ProjectId,MacroPad Tile Holder Sensors,4d616372-6f50-4616-9420-54696c652048,rev?*
+G04 #@! TF.SameCoordinates,Original*
+G04 #@! TF.FileFunction,Profile,NP*
+%FSLAX46Y46*%
+G04 Gerber Fmt 4.6, Leading zero omitted, Abs format (unit mm)*
+G04 Created by KiCad (PCBNEW 7.0.2) date 2023-10-24 21:53:47*
+%MOMM*%
+%LPD*%
+G01*
+G04 APERTURE LIST*
+G04 #@! TA.AperFunction,Profile*
+%ADD10C,0.100000*%
+G04 #@! TD*
+G04 APERTURE END LIST*
+D10*
+X110880000Y-62690000D02*
+X147870000Y-62690000D01*
+X147870000Y-80530000D01*
+X110880000Y-80530000D01*
+X110880000Y-62690000D01*
+M02*
